@@ -1,0 +1,13 @@
+{
+    "nodes": ["age", "portembarked", "fare", "numparentschildren", "passengerclass", "sex", "numsiblings", "survived"],
+    "edges": [
+        ["portembarked", "fare"],
+        ["fare", "passengerclass"],
+        ["passengerclass", "survived"],
+        ["age", "numparentschildren"],
+        ["age", "numsiblings"],
+        ["numparentschildren", "survived"],
+        ["numsiblings", "survived"],
+        ["sex", "survived"]
+    ]
+}

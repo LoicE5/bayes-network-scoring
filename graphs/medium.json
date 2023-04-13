@@ -1,0 +1,17 @@
+{
+    "nodes": ["fixedacidity","volatileacidity","citricacid","residualsugar","chlorides","freesulfurdioxide","totalsulfurdioxide","density","ph","sulphates","alcohol","quality"],
+    "edges": [
+        ["freesulfurdioxide", "totalsulfurdioxide"],
+        ["totalsulfurdioxide", "quality"],
+        ["sulphates", "quality"],
+        ["chlorides", "quality"],
+        ["residualsugar", "alcohol"],
+        ["residualsugar", "density"],
+        ["alcohol", "quality"],
+        ["density", "quality"],
+        ["volatileacidity", "citricacid"],
+        ["fixedacidity", "citricacid"],
+        ["citricacid", "ph"],
+        ["ph", "quality"]
+    ]
+}

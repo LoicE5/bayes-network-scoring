@@ -1,6 +1,8 @@
 import itertools as itrt
 import pandas as pd
 from mpmath import gamma, log
+import json
+import networkx as nx
 
 # r = nombre de valeurs différentes que peut prendre la variable x_i
 # q = nombre d'instanciations possibles que les parents de x_i peuvent prendre (se référer au graphe)
@@ -8,121 +10,107 @@ from mpmath import gamma, log
         # Pour citricacid, on aura q = r(volatileacidity) * r(fixedacidity)
 # m_ijk = nombre de fois dans les données où x_i = k et que les parents de x_i prennent la j_ème instanciation possible
 
-D:pd.DataFrame = pd.read_csv('./small.csv')
+def graph_from_json(path:str)->nx.DiGraph:
+    obj = json.load(open(path))
+    edges = [tuple(e) for e in obj["edges"]]
+    graph = nx.DiGraph()
+    graph.add_edges_from(edges)
+    return graph
 
-G:list = [
-    # "age","portembarked","fare","numparentschildren","passengerclass","sex","numsiblings","survived"
-    [0, 0, 0, 1, 0, 0, 1, 0], # age
-    [0, 0, 1, 0, 0, 0, 0, 0], # portembarked
-    [0, 0, 0, 0, 1, 0, 0, 0], # fare
-    [0, 0, 0, 0, 0, 0, 0, 1], # numparentschildren
-    [0, 0, 0, 0, 0, 0, 0, 1], # passengerclass
-    [0, 0, 0, 0, 0, 0, 0, 1], # sex
-    [0, 0, 0, 0, 0, 0, 0, 1], # numsiblings
-    [0, 0, 0, 0, 0, 0, 0, 0], # survived
-]
+class Scoring:
 
-G_map:list = list(D.columns)
-
-
-# X_1 = age, X_2 = portembarked, ...
-
-# Nombre de valeurs que x_i prend
-def r(x_i:str)->int:
-    return len(set(D[x_i]))
-
-
-def get_parents(node:str)->list:
-    try:
-        index_of_node = G_map.index(node)
-        adj_column = [i[index_of_node] for i in G]
-        return [G_map[key] for key,val in enumerate(adj_column) if val == 1]
-    except ValueError:
-        print(f"The value {node} does not exist in the dataframe")
-
-
-def q(x_i:str)->int:
-    result = 1
-
-    for i in get_parents(x_i):
-        result *= r(i)
+    def __init__(self, G:nx.DiGraph, D:pd.DataFrame):
+        self.G = G
+        self.D = D
     
-    return result
+    # X_1 = age, X_2 = portembarked, ...
+
+    # Nombre de valeurs que x_i prend
+    def r(self, x_i:str)->int:
+        return len(set(self.D[x_i]))
 
 
-def get_possible_instances(x_i:str)->tuple:
-    return tuple(set(D[x_i]))
-
-
-# Par exemple, si les parents prennent les valeurs 0 ou 1, et 0 ou 1 ou 2, on aura [(0,1), (0,1,2)]
-# j est un parent spécifique (numéroté)
-def pi(x_i:str, j:int=None)->list|tuple:
-
-    parents_instances = [get_possible_instances(parent) for parent in get_parents(x_i)]
-
-    pairs = list(itrt.product(*parents_instances))
-
-    if j:
-        assert j < len(pairs)
+    def get_parents(self, node:str)->list:
+        return list(self.G.predecessors(node))
     
-    return pairs[j] if j else pairs
 
+    def q(self, x_i:str)->int:
+        result = 1
 
-def m(x_i:str, j:int, k: int)->int:
-
-    parents = get_parents(x_i)
-    column = D[x_i]
-    result = 0
-    j_e_ins = pi(x_i, j)
-
-    # assert len(parents) == len(j_e_ins)
-    # assert k in get_possible_instances(x_i)
-
-    for index, i in enumerate(column):
-        if i == k:
-            for index_p, p in enumerate(parents):
-
-                parent_col_val = D[p][index]
-                j_eme_ins_parent = j_e_ins[index_p]
-
-                if parent_col_val == j_eme_ins_parent:
-                    result += 1
-
-    return result
-
-# print(m("survived", 5, 2))
-
-def score():
-    result = 0
-
-    for i in G_map:
+        for i in self.get_parents(x_i):
+            result *= self.r(i)
         
-        for j in range(1, q(i)):
-
-            print("q(i)",q(i))
-            print("r(i)",r(i))
-            print("m(i,j,0)",m(i,j,0))
-            print("r(i)+m(i, j, 0)", r(i)+m(i, j, 0))
-            print("gamma(r(i)+m(i, j, 0))", gamma(r(i)+m(i, j, 0)))
-            print("gamma(r(i)) / gamma(r(i)+m(i, j, 0)",gamma(r(i)) / gamma(r(i)+m(i, j, 0)))
-            print("log(gamma(r(i)) / gamma(r(i)+m(i, j, 0)))", log(
-                gamma(r(i)) / gamma(r(i)+m(i, j, 0))
-            ))            
-            print("seconde somme", sum([
-                log(gamma(1+ m(i, j, k))) for k in range(1, r(i))]))
-            print("".join(['-' for i in range(50)]))
-
-            break
+        return result
 
 
-            temp_res = log(
-                gamma(r(i)) / gamma(r(i)+m(i, j, 0))
-            ) + sum([
-                log(gamma(1+ m(i, j, k))) for k in range(1, r(i))
-            ])
+    def get_possible_instances(self, x_i:str)->tuple:
+        return tuple(set(self.D[x_i]))
 
-            result += temp_res
 
-    return result
+    # Par exemple, si les parents prennent les valeurs 0 ou 1, et 0 ou 1 ou 2, on aura [(0,1), (0,1,2)]
+    # j est un parent spécifique (numéroté)
+    def pi(self, x_i:str, j:int=None)->list|tuple:
 
-print(score())
+        parents_instances = [self.get_possible_instances(parent) for parent in self.get_parents(x_i)]
+
+        pairs = list(itrt.product(*parents_instances))
+
+        if j:
+            assert j < len(pairs)
+        
+        return pairs[j] if j else pairs
+
+
+    def m(self, x_i:str, j:int, k: int)->int:
+
+        parents = self.get_parents(x_i)
+        column = self.D[x_i]
+        result = 0
+        j_e_ins = self.pi(x_i, j)
+
+        # assert len(parents) == len(j_e_ins)
+        # assert k in get_possible_instances(x_i)
+
+        for index, i in enumerate(column):
+            if i == k:
+                for index_p, p in enumerate(parents):
+
+                    parent_col_val = self.D[p][index]
+                    j_eme_ins_parent = j_e_ins[index_p]
+
+                    if parent_col_val == j_eme_ins_parent:
+                        result += 1
+
+        return result
+
+
+    def score(self)->float:
+        result = 0
+
+        for i in self.G.nodes:
+            
+            for j in range(1, self.q(i)):
+
+                temp_res = log(
+                    gamma(self.r(i)) / gamma(self.r(i)+self.m(i, j, 0))
+                ) + sum([
+                    log(gamma(1+ self.m(i, j, k))) for k in range(1, self.r(i))
+                ])
+
+                result += temp_res
+
+        return result
+
+
+small = Scoring(
+    G=graph_from_json('graphs/small.json'),
+    D=pd.read_csv('datasets/small.csv')
+)
+
+medium = Scoring(
+    G=graph_from_json('graphs/medium.json'),
+    D=pd.read_csv('datasets/medium.csv')
+)
+
+print(small.score())
+print(medium.score())
