@@ -1,8 +1,11 @@
+import enum
 import itertools as itrt
 import pandas as pd
 from mpmath import gamma, log
 import json
 import networkx as nx
+import numpy as np
+from pyrsistent import m
 
 # r = nombre de valeurs différentes que peut prendre la variable x_i
 # q = nombre d'instanciations possibles que les parents de x_i peuvent prendre (se référer au graphe)
@@ -63,44 +66,39 @@ class Scoring:
 
     def m(self, x_i:str, j:int, k: int)->int:
 
+        result=0
         parents = self.get_parents(x_i)
-        column = self.D[x_i]
-        result = 0
-        j_e_ins = self.pi(x_i, j)
+                
+        if(len(parents) != 0):
+            
+            instances = self.pi(x_i)
+        
+            for i, value in enumerate(self.D[x_i]):
+        
+                count = 0
 
-        # assert len(parents) == len(j_e_ins)
-        # assert k in get_possible_instances(x_i)
+                for l, value in enumerate(instances[j-1]):
+                    
+                    if self.D[x_i][i] == k and self.D[parents[l]][i] == instances[j-1][l]:
+                        count+=1
+                        
+                    
+                if(count==len(instances[j-1])):
+                    result+=1
 
-        for index, i in enumerate(column):
-            if i == k:
-                for index_p, p in enumerate(parents):
+            return result
+        
+        else:
 
-                    parent_col_val = self.D[p][index]
-                    j_eme_ins_parent = j_e_ins[index_p]
-
-                    if parent_col_val == j_eme_ins_parent:
-                        result += 1
-
-        return result
+            for i, value in enumerate(self.D[x_i]):
+                if self.D[x_i][i] == k:
+                    result+=1
+                
+            return result    
 
 
     def score(self)->float:
-        result = 0
-
-        for i in self.G.nodes:
-            
-            for j in range(1, self.q(i)):
-
-                temp_res = log(
-                    gamma(self.r(i)) / gamma(self.r(i)+self.m(i, j, 0))
-                ) + sum([
-                    log(gamma(1+ self.m(i, j, k))) for k in range(1, self.r(i))
-                ])
-
-                result += temp_res
-
-        return result
-
+        print(self.m("age", 1, 1))
 
 small = Scoring(
     G=graph_from_json('graphs/small.json'),
@@ -113,4 +111,4 @@ medium = Scoring(
 )
 
 print(small.score())
-print(medium.score())
+# print(medium.score())
