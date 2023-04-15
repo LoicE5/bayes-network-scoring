@@ -1,11 +1,9 @@
-import enum
 import itertools as itrt
 import pandas as pd
-from mpmath import gamma, log
+from mpmath import log, factorial
 import json
 import networkx as nx
-import numpy as np
-from pyrsistent import m
+
 
 # r = nombre de valeurs différentes que peut prendre la variable x_i
 # q = nombre d'instanciations possibles que les parents de x_i peuvent prendre (se référer au graphe)
@@ -68,8 +66,15 @@ class Scoring:
 
         result=0
         parents = self.get_parents(x_i)
+
+        if k == 0:
+
+            for new_k in range(self.r(x_i)):
+                result += self.m(x_i, j, new_k+1)
+            
+            return result
                 
-        if(len(parents) != 0):
+        if len(parents) != 0:
             
             instances = self.pi(x_i)
         
@@ -98,7 +103,29 @@ class Scoring:
 
 
     def score(self)->float:
-        print(self.m("age", 1, 1))
+        result = 0
+
+        for i in self.D.columns:
+            temp_sum = 0
+
+            for j in range(1,self.q(i)+1):
+                print(i, j)
+
+                temp_sum += (
+                    log(factorial(self.r(i)-1)) 
+                    - log(
+                        factorial(self.r(i) + self.m(i,j,0) - 1)
+                    ) 
+                    + sum([
+                        log(
+                           factorial((1+self.m(i,j,z))-1)
+                        ) for z in range(1,self.r(i)+1)
+                    ])
+                )
+
+            result += temp_sum
+            
+        return result
 
 small = Scoring(
     G=graph_from_json('graphs/small.json'),
@@ -111,4 +138,4 @@ medium = Scoring(
 )
 
 print(small.score())
-# print(medium.score())
+print(medium.score())
