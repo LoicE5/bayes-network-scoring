@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-titanic_df = pd.read_csv('./small.csv')
+titanic_df = pd.read_csv('datasets/small.csv')
 
 def get_bayes_probs_from_dataset(df:pd.DataFrame)->dict:
     results = {}
@@ -16,6 +16,7 @@ def get_bayes_probs_from_dataset(df:pd.DataFrame)->dict:
     return results
 
 probs = get_bayes_probs_from_dataset(titanic_df)
+print(probs)
 
 fare_values = titanic_df['fare']
 portembarked_values = titanic_df['portembarked']

@@ -4,6 +4,8 @@ from mpmath import log, factorial
 import json
 import networkx as nx
 
+from utils import show_exec_time
+
 
 # r = nombre de valeurs différentes que peut prendre la variable x_i
 # q = nombre d'instanciations possibles que les parents de x_i peuvent prendre (se référer au graphe)
@@ -109,7 +111,6 @@ class Scoring:
             temp_sum = 0
 
             for j in range(1,self.q(i)+1):
-                print(i, j)
 
                 temp_sum += (
                     log(factorial(self.r(i)-1)) 
@@ -127,15 +128,17 @@ class Scoring:
             
         return result
 
-small = Scoring(
-    G=graph_from_json('graphs/small.json'),
-    D=pd.read_csv('datasets/small.csv')
-)
+# small = Scoring(
+#     G=graph_from_json('graphs/small.json'),
+#     D=pd.read_csv('datasets/small.csv')
+# )
 
-medium = Scoring(
-    G=graph_from_json('graphs/medium.json'),
-    D=pd.read_csv('datasets/medium.csv')
-)
+# medium = Scoring(
+#     G=graph_from_json('graphs/medium.json'),
+#     D=pd.read_csv('datasets/medium.csv')
+# )
 
-print(small.score())
-print(medium.score())
+# print("Small")
+# show_exec_time(small.score)
+# print("Medium")
+# show_exec_time(medium.score)
