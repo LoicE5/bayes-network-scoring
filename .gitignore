@@ -2,3 +2,4 @@ temp_score.py
 __pycache__
 .DS_Store
 __old__
+*.pdf
